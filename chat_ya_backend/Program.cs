@@ -119,7 +119,7 @@ app.MapGet("/api/chat/status", (ClaimsPrincipal user) =>
 
 #endregion
 
-// ?? 3. Mapeo de Endpoints Modulares
+// 3. Mapeo de Endpoints Modulares
 app.MapAuthEndpoints();
-
+app.MapUserEndpoints();
 app.Run();

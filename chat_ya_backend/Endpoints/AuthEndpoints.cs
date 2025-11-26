@@ -12,6 +12,9 @@ using System.Security.Claims;
 using System.Text;
 namespace chat_ya_backend.Endpoints
 {
+    /// <summary>
+    /// Maneja la creacion de la identidad del usuario
+    /// </summary>
     public static class AuthEndpoints
     {
         public static WebApplication MapAuthEndpoints(this WebApplication app)
