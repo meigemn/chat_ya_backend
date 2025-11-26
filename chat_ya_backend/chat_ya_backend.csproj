@@ -27,7 +27,6 @@
 
   <ItemGroup>
     <Folder Include="Models\Dtos\FilterDtos\" />
-    <Folder Include="Models\Entities\" />
     <Folder Include="Models\UnitsOfWork\" />
     <Folder Include="Models\Repositories\" />
     <Folder Include="Utils\" />
