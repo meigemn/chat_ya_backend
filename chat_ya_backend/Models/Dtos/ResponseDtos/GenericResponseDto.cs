@@ -15,12 +15,14 @@ namespace chat_ya_backend.Models.Dtos.ResponseDtos
         #region Constructores
 
         /// <summary>
-        ///     Constructor por defecto
+        ///     Constructor por defecto
         /// </summary>
         public GenericResponseDto()
         {
             isValid = true;
-            error = new GenericErrorDto(); // inicializa error con Id=0 (Ok)
+            error = new GenericErrorDto(); 
+            // Inicializa la propiedad de tipo 'object' a un valor no nulo
+            ReturnData = new object();
         }
 
         #endregion
@@ -28,7 +30,7 @@ namespace chat_ya_backend.Models.Dtos.ResponseDtos
         #region Propiedades
 
         /// <summary>
-        ///     Propiedad que indica si han habido errores
+        ///     Propiedad que indica si han habido errores
         /// </summary>
         public bool IsValid { get { return isValid; } }
 
@@ -42,15 +44,14 @@ namespace chat_ya_backend.Models.Dtos.ResponseDtos
         }
 
         /// <summary>
-        ///     Error a devolver al usuario <see cref="GenericErrorDto"/>
+        ///     Error a devolver al usuario <see cref="GenericErrorDto"/>
         /// </summary>
         public GenericErrorDto Error
         {
             get { return error; }
             set
             {
-
-                if (value != null )
+                if (value != null)
                 {
                     error = value;
                     isValid = false;
@@ -59,7 +60,7 @@ namespace chat_ya_backend.Models.Dtos.ResponseDtos
         }
 
         /// <summary>
-        ///     Método encargado de determinar si se debe serializar o no la propiedad error
+        ///     Método encargado de determinar si se debe serializar o no la propiedad error
         /// </summary>
         /// <returns></returns>
         public bool ShouldSerializeError()
@@ -68,11 +69,12 @@ namespace chat_ya_backend.Models.Dtos.ResponseDtos
         }
 
         /// <summary>
-        ///     Objeto de respuesta (Tu propiedad original)
+        ///     Objeto de respuesta (Tu propiedad original)
         /// </summary>
         [JsonIgnore]
-        public object ReturnData { get; set; }
-
+        public object ReturnData { get; set; } = new object(); // <--- Corregido con inicializador de propiedad
+                                                               // La inicialización en el constructor (línea 26) también es válida, 
+                                                               // pero esta forma es más concisa. Dejo ambas para seguridad.
         #endregion
     }
 }
