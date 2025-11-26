@@ -1,0 +1,36 @@
+# Archivos de usuario específicos
+*.user
+*.userosscache
+*.sln.docstates
+
+# Archivos de compilación
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+
+# Archivos de NuGet
+*.nupkg
+packages/
+
+# Archivos de Visual Studio
+.vs/
+*.suo
+*.userosscache
+*.cachefile
+
+# Archivos de publicación
+publish/
+
+# Archivos de pruebas
+TestResults/
+
+# Archivos de configuración local
+appsettings.*.json
+app.config.local
+
+# Archivos de dependencias
+project.lock.json
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
