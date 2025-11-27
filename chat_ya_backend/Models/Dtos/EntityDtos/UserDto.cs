@@ -6,6 +6,7 @@
         public string Id { get; set; } = string.Empty;
 
         // Nombre de usuario para mostrar
-        public string Username { get; set; } = string.Empty;
+        public string UserName { get; set; } = string.Empty;
+        public string Email {  get; set; } = string.Empty;
     }
 }

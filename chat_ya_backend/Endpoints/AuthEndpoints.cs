@@ -20,7 +20,8 @@ namespace chat_ya_backend.Endpoints
         public static WebApplication MapAuthEndpoints(this WebApplication app)
         {
             // Creamos un grupo de rutas base /api/auth
-            var group = app.MapGroup("/api/auth");
+            var group = app.MapGroup("/api/auth")
+                .WithTags("Registro y Login");
 
             // Reutilizamos el Logger Factory de la aplicación
             var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
@@ -117,7 +118,7 @@ namespace chat_ya_backend.Endpoints
                 var response = new LoginResponseDto
                 {
                     Token = tokenString,
-                    User = new UserDto { Id = user.Id, Username = user.UserName! },
+                    User = new UserDto { Id = user.Id, UserName = user.UserName! },
                     Expiration = expiration
                 };
 

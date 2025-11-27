@@ -105,21 +105,23 @@ app.UseHttpsRedirection();
 
 // 2.2. Middleware de Seguridad: Autenticación y Autorización
 app.UseAuthentication();
-app.UseAuthorization(); 
+app.UseAuthorization();
 
-// 2.3. Endpoint de prueba para verificar que el token funciona
-app.MapGet("/api/chat/status", (ClaimsPrincipal user) =>
-{
-    var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-    return Results.Ok($"Bienvenido al chat, {user.Identity?.Name}. Tu ID es: {userId}");
-})
-.RequireAuthorization()
-.WithName("GetChatStatus")
-.WithOpenApi();
+//// 2.3. Endpoint de prueba para verificar que el token funciona
+//app.MapGet("/api/chat/status", (ClaimsPrincipal user) =>
+//{
+//    var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+//    return Results.Ok($"Bienvenido al chat, {user.Identity?.Name}. Tu ID es: {userId}");
+//})
+//.RequireAuthorization()
+//.WithName("GetChatStatus")
+//.WithOpenApi();
 
-#endregion
+//#endregion
 
-// 3. Mapeo de Endpoints Modulares
+//// 3. Mapeo de Endpoints Modulares
 app.MapAuthEndpoints();
 app.MapUserEndpoints();
+app.MapRoomEndpoints();
+#endregion
 app.Run();
