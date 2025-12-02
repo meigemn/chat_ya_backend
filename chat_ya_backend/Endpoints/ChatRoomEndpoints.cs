@@ -23,7 +23,7 @@ namespace chat_ya_backend.Endpoints
                            .WithOpenApi()
                            .WithTags("ChatRooms");
 
-
+            #region Post
             // --- 1. POST /api/rooms (Crear una nueva sala) ---
             group.MapPost("/", async (
                 CreateRoomDto model,
@@ -71,7 +71,8 @@ namespace chat_ya_backend.Endpoints
                 return Results.Created($"/api/rooms/{newRoom.Id}", roomDto);
             })
             .WithName("CreateRoom");
-
+            #endregion
+            #region Get
             // --- 2. GET /api/rooms (Listar todas las salas del usuario) ---
             group.MapGet("/", async (
                 ClaimsPrincipal user,
@@ -106,7 +107,8 @@ namespace chat_ya_backend.Endpoints
                 return Results.Ok(roomsList);
             })
             .WithName("GetUserRooms");
-
+            #endregion
+            #region Put
             // 3. PUT /api/rooms/{id} (Actualizar el nombre de la sala) ---
             group.MapPut("/{id:int}", async (
                 int id,
@@ -156,8 +158,8 @@ namespace chat_ya_backend.Endpoints
                 return Results.Ok(roomDto);
             })
             .WithName("UpdateRoom");
-
-
+            #endregion
+            #region Delete
             // DELETE /api/rooms/{id} (Eliminar la sala) ---
             group.MapDelete("/{id:int}", async (
                 int id,
@@ -208,7 +210,7 @@ namespace chat_ya_backend.Endpoints
                 return Results.NoContent(); // 204 No Content: éxito sin cuerpo de respuesta.
             })
             .WithName("DeleteRoom");
-
+            #endregion
             return app;
         }
     }
