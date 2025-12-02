@@ -14,7 +14,7 @@ namespace chat_ya_backend.Endpoints
     public static class RoomEndpoints
     {
         // Usamos ILogger<RoomEndpoints> para la inyección de logger. 
-        // Si tienes problemas de compilación, usa ILogger<object>
+        
         public static WebApplication MapRoomEndpoints(this WebApplication app)
         {
             // Creamos un grupo de rutas base /api/rooms. 
@@ -23,9 +23,6 @@ namespace chat_ya_backend.Endpoints
                            .WithOpenApi()
                            .WithTags("ChatRooms");
 
-            // ❌ ELIMINADO: Inicialización de logger global. Usaremos inyección por parámetro.
-            // var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
-            // var roomLogger = loggerFactory.CreateLogger("RoomEndpoints"); 
 
             // --- 1. POST /api/rooms (Crear una nueva sala) ---
             group.MapPost("/", async (
@@ -33,7 +30,7 @@ namespace chat_ya_backend.Endpoints
                 ClaimsPrincipal user,
                 MeigemnDbContext context,
                 UserManager<IdentityUser> userManager,
-                ILogger<object> roomLogger) => // 💡 Logger Inyectado
+                ILogger<object> roomLogger) => // Logger Inyectado
             {
                 var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
@@ -79,7 +76,7 @@ namespace chat_ya_backend.Endpoints
             group.MapGet("/", async (
                 ClaimsPrincipal user,
                 MeigemnDbContext context,
-                ILogger<object> roomLogger) => // 💡 Logger Inyectado
+                ILogger<object> roomLogger) => // Logger Inyectado
             {
                 var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (string.IsNullOrEmpty(userId))
@@ -88,10 +85,10 @@ namespace chat_ya_backend.Endpoints
                     return Results.Unauthorized();
                 }
 
-                // 1. Obtener las salas del usuario mediante la tabla de unión UserRoom
+                // 1. Obtiene las salas del usuario mediante la tabla de unión UserRoom
                 var userRooms = await context.UserRooms
                     .Where(ur => ur.UserId == userId)
-                    // 2. Incluir los datos de la sala de chat relacionada
+                    // 2. Incluye los datos de la sala de chat relacionada
                     .Include(ur => ur.Room)
                     .ToListAsync();
 
@@ -110,13 +107,13 @@ namespace chat_ya_backend.Endpoints
             })
             .WithName("GetUserRooms");
 
-            // 🚀 NUEVO: 3. PUT /api/rooms/{id} (Actualizar el nombre de la sala) ---
+            // 3. PUT /api/rooms/{id} (Actualizar el nombre de la sala) ---
             group.MapPut("/{id:int}", async (
                 int id,
                 UpdateChartRoomDto model,
                 ClaimsPrincipal user,
                 MeigemnDbContext context,
-                ILogger<object> roomLogger) => // 💡 Logger Inyectado
+                ILogger<object> roomLogger) => // Logger Inyectado
             {
                 var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
@@ -133,7 +130,7 @@ namespace chat_ya_backend.Endpoints
                 if (!isMember)
                 {
                     roomLogger.LogWarning("Usuario {UserId} intentó actualizar sala {RoomId} sin ser miembro.", userId, id);
-                    return Results.Forbid(); // 403 Forbidden o Unauthorized, ya que no tiene derecho.
+                    return Results.Forbid(); // 403 Forbidden o Unauthorized
                 }
 
                 // 2. Buscar la sala
@@ -161,18 +158,17 @@ namespace chat_ya_backend.Endpoints
             .WithName("UpdateRoom");
 
 
-            // 🚀 NUEVO: 4. DELETE /api/rooms/{id} (Eliminar la sala) ---
+            // DELETE /api/rooms/{id} (Eliminar la sala) ---
             group.MapDelete("/{id:int}", async (
                 int id,
                 ClaimsPrincipal user,
                 MeigemnDbContext context,
-                ILogger<object> roomLogger) => // 💡 Logger Inyectado
+                ILogger<object> roomLogger) => // Logger Inyectado
             {
                 var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
 
-                // 1. Verificar si el usuario pertenece a la sala (solo los miembros o administradores pueden eliminar)
-                // Por simplicidad, asumiremos que cualquier miembro puede eliminar la sala por ahora.
+                // 1. Verificar si el usuario pertenece a la sala (solo los miembros o administradores pueden eliminar
                 // Si tu modelo tiene roles (admin/miembro), debes revisar el rol.
                 var userRoomEntry = await context.UserRooms
                     .FirstOrDefaultAsync(ur => ur.RoomId == id && ur.UserId == userId);
@@ -187,12 +183,11 @@ namespace chat_ya_backend.Endpoints
                 var roomToDelete = await context.ChatRoom.FindAsync(id);
                 if (roomToDelete == null)
                 {
-                    // Esto no debería pasar si UserRoom existe, pero es un buen control
+                    // Esto no debería pasar si UserRoom existe, pero lo dejo por seguridad
                     return Results.NotFound(new { Error = $"Sala con ID {id} no encontrada." });
                 }
 
-                // 3. Eliminar primero todas las entradas de UserRoom asociadas a esta sala
-                // Esto es crucial para la integridad referencial.
+                // 3. Eliminar primero todas las entradas de UserRoom asociadas a esta 
                 var allRoomParticipants = await context.UserRooms
                     .Where(ur => ur.RoomId == id)
                     .ToListAsync();
@@ -210,7 +205,7 @@ namespace chat_ya_backend.Endpoints
 
                 roomLogger.LogInformation("Sala {RoomId} y {Count} participantes eliminados por {UserId}.", id, allRoomParticipants.Count, userId);
 
-                return Results.NoContent(); // 204 No Content para indicar éxito sin cuerpo de respuesta.
+                return Results.NoContent(); // 204 No Content: éxito sin cuerpo de respuesta.
             })
             .WithName("DeleteRoom");
 
