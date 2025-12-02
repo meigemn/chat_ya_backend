@@ -13,7 +13,7 @@ using Microsoft.Extensions.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
 
-#region 1. Configuración de Servicios (Servicios)
+#region Configuración de Servicios (Servicios)
 
 // 1.2. Configuración de la Base de Datos (SQLite) y EF Core
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
@@ -92,7 +92,7 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-#region 2. Configuración del Middleware HTTP (Pipeline)
+#region Configuración del Middleware HTTP (Pipeline)
 
 // 2.1. Development Setup (Swagger)
 if (app.Environment.IsDevelopment())
@@ -118,10 +118,13 @@ app.UseAuthorization();
 //.WithOpenApi();
 
 //#endregion
+#endregion
 
+#region mapeo de Endpoints
 //// 3. Mapeo de Endpoints Modulares
 app.MapAuthEndpoints();
 app.MapUserEndpoints();
 app.MapRoomEndpoints();
+app.MapMessageEndpoints();
 #endregion
 app.Run();
