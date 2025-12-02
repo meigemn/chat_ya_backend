@@ -4,39 +4,49 @@ using chat_ya_backend.Models.Entities;
 using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
 using chat_ya_backend.Models.Dtos.EntityDtos;
-using Microsoft.Extensions.Logging; // Necesario para ILoggerFactory
-using Microsoft.EntityFrameworkCore; // Necesario para .Include y ToListAsync
+using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
+using chat_ya_backend.Models.Dtos.UpdateDto; // Necesario para UpdateChartRoomDto
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace chat_ya_backend.Endpoints
 {
     public static class RoomEndpoints
     {
+        // Usamos ILogger<RoomEndpoints> para la inyección de logger. 
+        // Si tienes problemas de compilación, usa ILogger<object>
         public static WebApplication MapRoomEndpoints(this WebApplication app)
         {
             // Creamos un grupo de rutas base /api/rooms. 
-
             var group = app.MapGroup("/api/rooms")
                            .RequireAuthorization()
                            .WithOpenApi()
                            .WithTags("ChatRooms");
 
-            var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
-            var roomLogger = loggerFactory.CreateLogger("RoomEndpoints");
+            // ❌ ELIMINADO: Inicialización de logger global. Usaremos inyección por parámetro.
+            // var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
+            // var roomLogger = loggerFactory.CreateLogger("RoomEndpoints"); 
 
             // --- 1. POST /api/rooms (Crear una nueva sala) ---
             group.MapPost("/", async (
                 CreateRoomDto model,
                 ClaimsPrincipal user,
                 MeigemnDbContext context,
-                UserManager<IdentityUser> userManager) =>
+                UserManager<IdentityUser> userManager,
+                ILogger<object> roomLogger) => // 💡 Logger Inyectado
             {
                 var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
 
+                if (string.IsNullOrWhiteSpace(model.ChatRoomName))
+                {
+                    return Results.BadRequest(new { Error = "El nombre de la sala es obligatorio." });
+                }
+
                 // 2. Crear la entidad ChatRoom
                 var newRoom = new ChatRoom
-                { 
-                    ChatRoomName = model.ChatRoomName, 
+                {
+                    ChatRoomName = model.ChatRoomName,
                 };
 
                 context.ChatRoom.Add(newRoom);
@@ -68,7 +78,8 @@ namespace chat_ya_backend.Endpoints
             // --- 2. GET /api/rooms (Listar todas las salas del usuario) ---
             group.MapGet("/", async (
                 ClaimsPrincipal user,
-                MeigemnDbContext context) =>
+                MeigemnDbContext context,
+                ILogger<object> roomLogger) => // 💡 Logger Inyectado
             {
                 var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (string.IsNullOrEmpty(userId))
@@ -89,8 +100,7 @@ namespace chat_ya_backend.Endpoints
                     .Select(ur => new ChatRoomDto
                     {
                         Id = ur.Room.Id,
-                        ChatRoomName = ur.Room.ChatRoomName, 
-
+                        ChatRoomName = ur.Room.ChatRoomName,
                     })
                     .ToList();
 
@@ -100,6 +110,109 @@ namespace chat_ya_backend.Endpoints
             })
             .WithName("GetUserRooms");
 
+            // 🚀 NUEVO: 3. PUT /api/rooms/{id} (Actualizar el nombre de la sala) ---
+            group.MapPut("/{id:int}", async (
+                int id,
+                UpdateChartRoomDto model,
+                ClaimsPrincipal user,
+                MeigemnDbContext context,
+                ILogger<object> roomLogger) => // 💡 Logger Inyectado
+            {
+                var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
+
+                if (string.IsNullOrWhiteSpace(model.ChatRoomName))
+                {
+                    return Results.BadRequest(new { Error = "El nombre de la sala no puede estar vacío." });
+                }
+
+                // 1. Verificar si el usuario pertenece a la sala (solo los miembros pueden actualizar)
+                var isMember = await context.UserRooms
+                    .AnyAsync(ur => ur.RoomId == id && ur.UserId == userId);
+
+                if (!isMember)
+                {
+                    roomLogger.LogWarning("Usuario {UserId} intentó actualizar sala {RoomId} sin ser miembro.", userId, id);
+                    return Results.Forbid(); // 403 Forbidden o Unauthorized, ya que no tiene derecho.
+                }
+
+                // 2. Buscar la sala
+                var room = await context.ChatRoom.FindAsync(id);
+                if (room == null)
+                {
+                    return Results.NotFound(new { Error = $"Sala con ID {id} no encontrada." });
+                }
+
+                // 3. Actualizar
+                room.ChatRoomName = model.ChatRoomName;
+                await context.SaveChangesAsync();
+
+                roomLogger.LogInformation("Sala {RoomId} actualizada por {UserId}.", id, userId);
+
+                // 4. Devolver la sala actualizada
+                var roomDto = new ChatRoomDto
+                {
+                    Id = room.Id,
+                    ChatRoomName = room.ChatRoomName,
+                };
+
+                return Results.Ok(roomDto);
+            })
+            .WithName("UpdateRoom");
+
+
+            // 🚀 NUEVO: 4. DELETE /api/rooms/{id} (Eliminar la sala) ---
+            group.MapDelete("/{id:int}", async (
+                int id,
+                ClaimsPrincipal user,
+                MeigemnDbContext context,
+                ILogger<object> roomLogger) => // 💡 Logger Inyectado
+            {
+                var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
+
+                // 1. Verificar si el usuario pertenece a la sala (solo los miembros o administradores pueden eliminar)
+                // Por simplicidad, asumiremos que cualquier miembro puede eliminar la sala por ahora.
+                // Si tu modelo tiene roles (admin/miembro), debes revisar el rol.
+                var userRoomEntry = await context.UserRooms
+                    .FirstOrDefaultAsync(ur => ur.RoomId == id && ur.UserId == userId);
+
+                if (userRoomEntry == null)
+                {
+                    roomLogger.LogWarning("Usuario {UserId} intentó eliminar sala {RoomId} sin ser miembro.", userId, id);
+                    return Results.Forbid();
+                }
+
+                // 2. Buscar la sala (ya que sabemos que existe si userRoomEntry no es nulo)
+                var roomToDelete = await context.ChatRoom.FindAsync(id);
+                if (roomToDelete == null)
+                {
+                    // Esto no debería pasar si UserRoom existe, pero es un buen control
+                    return Results.NotFound(new { Error = $"Sala con ID {id} no encontrada." });
+                }
+
+                // 3. Eliminar primero todas las entradas de UserRoom asociadas a esta sala
+                // Esto es crucial para la integridad referencial.
+                var allRoomParticipants = await context.UserRooms
+                    .Where(ur => ur.RoomId == id)
+                    .ToListAsync();
+
+                context.UserRooms.RemoveRange(allRoomParticipants);
+
+                // Opcional: Si tienes mensajes, debes eliminarlos aquí también:
+                // var roomMessages = await context.Messages.Where(m => m.ChatRoomId == id).ToListAsync();
+                // context.Messages.RemoveRange(roomMessages);
+
+                // 4. Eliminar la sala de chat
+                context.ChatRoom.Remove(roomToDelete);
+
+                await context.SaveChangesAsync();
+
+                roomLogger.LogInformation("Sala {RoomId} y {Count} participantes eliminados por {UserId}.", id, allRoomParticipants.Count, userId);
+
+                return Results.NoContent(); // 204 No Content para indicar éxito sin cuerpo de respuesta.
+            })
+            .WithName("DeleteRoom");
 
             return app;
         }

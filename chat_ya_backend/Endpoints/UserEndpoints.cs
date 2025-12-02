@@ -18,6 +18,8 @@ namespace chat_ya_backend.Endpoints
     {
         public static WebApplication MapUserEndpoints(this WebApplication app)
         {
+            #region rutas Base (url, tag, autorizacion)
+
             var response = new CreateEditRemoveResponseDto();
             response.IsSuccess(0); // Para inicializar la respuesta de éxito/error
 
@@ -26,7 +28,9 @@ namespace chat_ya_backend.Endpoints
                           // .RequireAuthorization() 
                            .WithTags("Users")
                            .WithOpenApi();
+            #endregion
 
+            #region Get all usuarios
             // --- 3. GET /api/users (Listar Todos los Usuarios) ---
             group.MapGet("/", async (UserManager<IdentityUser> userManager, ILogger<object> userLogger) => // 💡 CORREGIDO aquí
             {
@@ -46,7 +50,9 @@ namespace chat_ya_backend.Endpoints
                 return Results.Ok(allUsersDto); // Devuelve List<UserDto> y código 200 OK
             })
             .WithName("GetAllUsers");
+            #endregion
 
+            #region get by id
             // --- 1. GET /api/users/{id} (Obtener Perfil por ID) ---
             group.MapGet("/{id}", async (string id, UserManager<IdentityUser> userManager, ILogger<object> userLogger) => // 💡 CORREGIDO aquí
             {
@@ -69,7 +75,9 @@ namespace chat_ya_backend.Endpoints
                 return Results.Ok(userDto);
             })
             .WithName("GetUserById");
+            #endregion
 
+            #region Obtener perfil propio
             // --- 1. GET /api/users/me (Obtener Perfil Propio) ---
             group.MapGet("/me", async (ClaimsPrincipal user, UserManager<IdentityUser> userManager, ILogger<object> userLogger) => // 💡 CORREGIDO aquí
             {
@@ -99,14 +107,15 @@ namespace chat_ya_backend.Endpoints
                 return Results.Ok(userDto);
             })
             .WithName("GetUserProfile");
+            #endregion
 
-
-            // 🟢 ACTUALIZACIÓN: 3.1. PUT /api/users/me/username (Actualizar solo Username) ---
+            #region modificar username
+            // 3.1. PUT /api/users/me/username (Actualizar solo Username) ---
             group.MapPut("/me/username", async (
                 UpdateUsernameDto model,
                 ClaimsPrincipal user,
                 UserManager<IdentityUser> userManager,
-                ILogger<object> userLogger) => // 💡 CORREGIDO aquí
+                ILogger<object> userLogger) => 
             {
                 var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
@@ -139,13 +148,15 @@ namespace chat_ya_backend.Endpoints
                 return Results.Ok(new CreateEditRemoveResponseDto { Success = true });
             })
             .WithName("UpdateUsername");
+            #endregion
 
-            // 🟢 ACTUALIZACIÓN: 3.2. PUT /api/users/me/email (Actualizar solo Email) ---
+            #region modificar email
+            // 3.2. PUT /api/users/me/email (Actualizar solo Email) ---
             group.MapPut("/me/email", async (
                 UpdateEmailDto model,
                 ClaimsPrincipal user,
                 UserManager<IdentityUser> userManager,
-                ILogger<object> userLogger) => // 💡 CORREGIDO aquí
+                ILogger<object> userLogger) => 
             {
                 var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
@@ -178,14 +189,15 @@ namespace chat_ya_backend.Endpoints
                 return Results.Ok(new CreateEditRemoveResponseDto { Success = true });
             })
             .WithName("UpdateEmail");
+            #endregion
 
-
+            #region modificar contreña
             // --- 4. POST /api/users/change-password (Cambiar Contraseña) ---
             group.MapPost("/change-password", async (
                 ChangePasswordDto model,
                 ClaimsPrincipal user,
                 UserManager<IdentityUser> userManager,
-                ILogger<object> userLogger) => // 💡 CORREGIDO aquí
+                ILogger<object> userLogger) => 
             {
                 var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
@@ -214,12 +226,14 @@ namespace chat_ya_backend.Endpoints
             })
             .WithName("ChangePassword");
 
+            #endregion
 
+            #region borrarse uno mismo
             // --- 5. DELETE /api/users/me (Eliminar Cuenta) ---
             group.MapDelete("/me", async (
                 ClaimsPrincipal user,
                 UserManager<IdentityUser> userManager,
-                ILogger<object> userLogger) => // 💡 CORREGIDO aquí
+                ILogger<object> userLogger) => 
             {
                 var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
@@ -244,7 +258,7 @@ namespace chat_ya_backend.Endpoints
 
             })
             .WithName("DeleteUser");
-
+            #endregion
             return app;
         }
     }
