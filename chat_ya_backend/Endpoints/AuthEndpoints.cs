@@ -26,7 +26,7 @@ namespace chat_ya_backend.Endpoints
             // Reutilizamos el Logger Factory de la aplicación
             var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
             var authLogger = loggerFactory.CreateLogger("AuthEndpoints");
-
+            #region Endpoint registro de usuario
             // 1. Endpoint de Registro de Usuario
             group.MapPost("/register", async (CreateUserDto model, UserManager<IdentityUser> userManager) =>
             {
@@ -54,7 +54,9 @@ namespace chat_ya_backend.Endpoints
             .WithName("RegisterUser")
             .WithOpenApi()
             .AllowAnonymous();
+            #endregion
 
+            #region Endpoint de Login
             // 2. Endpoint de Login
             group.MapPost("/login", async (
                 LoginRequestDtos model,
@@ -89,6 +91,7 @@ namespace chat_ya_backend.Endpoints
                         statusCode: StatusCodes.Status401Unauthorized
                     );
                 }
+                
 
                 // 2. Generación del JWT
                 var jwtKeyLocal = config["Jwt:Key"]!;
@@ -128,6 +131,7 @@ namespace chat_ya_backend.Endpoints
             .WithName("LoginUser")
             .WithOpenApi()
             .AllowAnonymous();
+            #endregion
 
             return app;
         }

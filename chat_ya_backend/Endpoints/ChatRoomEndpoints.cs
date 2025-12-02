@@ -6,7 +6,7 @@ using System.Security.Claims;
 using chat_ya_backend.Models.Dtos.EntityDtos;
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
-using chat_ya_backend.Models.Dtos.UpdateDto; // Necesario para UpdateChartRoomDto
+using chat_ya_backend.Models.Dtos.UpdateDto; 
 using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace chat_ya_backend.Endpoints
@@ -22,9 +22,45 @@ namespace chat_ya_backend.Endpoints
                            .RequireAuthorization()
                            .WithOpenApi()
                            .WithTags("ChatRooms");
+            #region Get
+            // --- 1. GET /api/rooms (Listar todas las salas del usuario) ---
+            group.MapGet("/", async (
+                ClaimsPrincipal user,
+                MeigemnDbContext context,
+                ILogger<object> roomLogger) => // Logger Inyectado
+            {
+                var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userId))
+                {
+                    roomLogger.LogWarning("Intento de listar salas sin userId en el token.");
+                    return Results.Unauthorized();
+                }
+
+                // 1. Obtiene las salas del usuario mediante la tabla de unión UserRoom
+                var userRooms = await context.UserRooms
+                    .Where(ur => ur.UserId == userId)
+                    // 2. Incluye los datos de la sala de chat relacionada
+                    .Include(ur => ur.Room)
+                    .ToListAsync();
+
+                // 3. Mapear los resultados
+                var roomsList = userRooms
+                    .Select(ur => new ChatRoomDto
+                    {
+                        Id = ur.Room.Id,
+                        ChatRoomName = ur.Room.ChatRoomName,
+                    })
+                    .ToList();
+
+                roomLogger.LogInformation("Usuario {UserId} consultó {Count} salas.", userId, roomsList.Count);
+
+                return Results.Ok(roomsList);
+            })
+            .WithName("GetUserRooms");
+            #endregion
 
             #region Post
-            // --- 1. POST /api/rooms (Crear una nueva sala) ---
+            // --- 2. POST /api/rooms (Crear una nueva sala) ---
             group.MapPost("/", async (
                 CreateRoomDto model,
                 ClaimsPrincipal user,
@@ -72,47 +108,12 @@ namespace chat_ya_backend.Endpoints
             })
             .WithName("CreateRoom");
             #endregion
-            #region Get
-            // --- 2. GET /api/rooms (Listar todas las salas del usuario) ---
-            group.MapGet("/", async (
-                ClaimsPrincipal user,
-                MeigemnDbContext context,
-                ILogger<object> roomLogger) => // Logger Inyectado
-            {
-                var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userId))
-                {
-                    roomLogger.LogWarning("Intento de listar salas sin userId en el token.");
-                    return Results.Unauthorized();
-                }
-
-                // 1. Obtiene las salas del usuario mediante la tabla de unión UserRoom
-                var userRooms = await context.UserRooms
-                    .Where(ur => ur.UserId == userId)
-                    // 2. Incluye los datos de la sala de chat relacionada
-                    .Include(ur => ur.Room)
-                    .ToListAsync();
-
-                // 3. Mapear los resultados
-                var roomsList = userRooms
-                    .Select(ur => new ChatRoomDto
-                    {
-                        Id = ur.Room.Id,
-                        ChatRoomName = ur.Room.ChatRoomName,
-                    })
-                    .ToList();
-
-                roomLogger.LogInformation("Usuario {UserId} consultó {Count} salas.", userId, roomsList.Count);
-
-                return Results.Ok(roomsList);
-            })
-            .WithName("GetUserRooms");
-            #endregion
+            
             #region Put
             // 3. PUT /api/rooms/{id} (Actualizar el nombre de la sala) ---
             group.MapPut("/{id:int}", async (
                 int id,
-                UpdateChartRoomDto model,
+                UpdateChatRoomDto model,
                 ClaimsPrincipal user,
                 MeigemnDbContext context,
                 ILogger<object> roomLogger) => // Logger Inyectado
@@ -159,6 +160,7 @@ namespace chat_ya_backend.Endpoints
             })
             .WithName("UpdateRoom");
             #endregion
+
             #region Delete
             // DELETE /api/rooms/{id} (Eliminar la sala) ---
             group.MapDelete("/{id:int}", async (
@@ -211,6 +213,7 @@ namespace chat_ya_backend.Endpoints
             })
             .WithName("DeleteRoom");
             #endregion
+
             return app;
         }
     }
