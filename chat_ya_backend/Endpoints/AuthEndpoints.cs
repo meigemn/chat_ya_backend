@@ -3,6 +3,7 @@ using chat_ya_backend.Models.Dtos.EntityDtos;
 using chat_ya_backend.Models.Dtos.ErrorDtos;
 using chat_ya_backend.Models.Dtos.RequestDtos;
 using chat_ya_backend.Models.Dtos.ResponseDtos;
+using chat_ya_backend.Models.Entities;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Identity;
@@ -28,11 +29,11 @@ namespace chat_ya_backend.Endpoints
             var authLogger = loggerFactory.CreateLogger("AuthEndpoints");
             #region Endpoint registro de usuario
             // 1. Endpoint de Registro de Usuario
-            group.MapPost("/register", async (CreateUserDto model, UserManager<IdentityUser> userManager) =>
+            group.MapPost("/register", async (CreateUserDto model, UserManager<ApplicationUser> userManager) =>
             {
                 authLogger.LogInformation("Attempting to register new user: {Username}", model.Username);
 
-                var user = new IdentityUser { UserName = model.Username, Email = model.Email };
+                var user = new ApplicationUser { UserName = model.Username, Email = model.Email };
                 var result = await userManager.CreateAsync(user, model.Password);
 
                 var response = new CreateEditRemoveResponseDto();
@@ -60,8 +61,8 @@ namespace chat_ya_backend.Endpoints
             // 2. Endpoint de Login
             group.MapPost("/login", async (
                 LoginRequestDtos model,
-                SignInManager<IdentityUser> signInManager,
-                UserManager<IdentityUser> userManager,
+                SignInManager<ApplicationUser> signInManager,
+                UserManager<ApplicationUser> userManager,
                 IConfiguration config) =>
             {
                 // 1. Verificación de Credenciales

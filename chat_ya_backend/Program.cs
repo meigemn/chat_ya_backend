@@ -1,31 +1,25 @@
 #region Usings y Dependencias
-using chat_ya_backend.Endpoints; 
+using chat_ya_backend.Endpoints;
 using chat_ya_backend.Models.Context;
+using chat_ya_backend.Models.Entities;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System.Security.Claims;
+using Microsoft.OpenApi.Models;
 using System.Text;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging;
 #endregion
 
 var builder = WebApplication.CreateBuilder(args);
 
-#region Configuración de Servicios (Servicios)
-
-// 1.2. Configuración de la Base de Datos (SQLite) y EF Core
+#region Configuración de Servicios
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-
 builder.Services.AddDbContext<MeigemnDbContext>(options =>
     options.UseSqlite(connectionString));
 
-// 1.3. Configuración de ASP.NET Core Identity
-builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
-    // Opciones de contraseña
     options.Password.RequiredLength = 4;
     options.Password.RequireDigit = false;
     options.Password.RequireLowercase = false;
@@ -35,10 +29,8 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
 .AddEntityFrameworkStores<MeigemnDbContext>()
 .AddDefaultTokenProviders();
 
-// 1.4. Configuración de Autenticación JWT (Bearer Token)
 var jwtKey = builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key no configurada.");
 var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? throw new InvalidOperationException("JWT Issuer no configurado.");
-
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -57,30 +49,27 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// 1.5. Autorización
 builder.Services.AddAuthorization();
-
-// 1.6. Configuración de SwaggerGen con Autenticación JWT
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
-    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
-        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+        Type = SecuritySchemeType.Http,
         Scheme = "Bearer",
         BearerFormat = "JWT",
-        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        In = ParameterLocation.Header,
         Description = "Ingresa el token JWT en el formato: Bearer {token}"
     });
-    options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
-            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            new OpenApiSecurityScheme
             {
-                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                Reference = new OpenApiReference
                 {
-                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Type = ReferenceType.SecurityScheme,
                     Id = "Bearer"
                 }
             },
@@ -92,9 +81,7 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-#region Configuración del Middleware HTTP (Pipeline)
-
-// 2.1. Development Setup (Swagger)
+#region Middleware
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -102,29 +89,15 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
-// 2.2. Middleware de Seguridad: Autenticación y Autorización
 app.UseAuthentication();
 app.UseAuthorization();
-
-//// 2.3. Endpoint de prueba para verificar que el token funciona
-//app.MapGet("/api/chat/status", (ClaimsPrincipal user) =>
-//{
-//    var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-//    return Results.Ok($"Bienvenido al chat, {user.Identity?.Name}. Tu ID es: {userId}");
-//})
-//.RequireAuthorization()
-//.WithName("GetChatStatus")
-//.WithOpenApi();
-
-//#endregion
 #endregion
 
-#region mapeo de Endpoints
-//// 3. Mapeo de Endpoints Modulares
+#region Endpoints
 app.MapAuthEndpoints();
 app.MapUserEndpoints();
 app.MapRoomEndpoints();
 app.MapMessageEndpoints();
 #endregion
+
 app.Run();

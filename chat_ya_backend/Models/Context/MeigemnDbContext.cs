@@ -1,15 +1,13 @@
 ﻿using chat_ya_backend.Models.Entities;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json.Linq; // Aunque no es necesario aquí, lo mantengo de tu código
 
 namespace chat_ya_backend.Models.Context
 {
-    // Hereda de IdentityDbContext, usando la clase base 'IdentityUser'
-    public class MeigemnDbContext : IdentityDbContext<IdentityUser>
+    // Hereda de IdentityDbContext, usando la clase ApplicationUser
+    public class MeigemnDbContext : IdentityDbContext<ApplicationUser>
     {
-    
+
         // Propiedades DbSet 
 
         public DbSet<ChatRoom> ChatRoom { get; set; } = default!;
@@ -18,7 +16,7 @@ namespace chat_ya_backend.Models.Context
         public DbSet<UserRoom> UserRooms { get; set; } = default!;
 
 
-        // Constructor necesario para pasar las opciones a la clase base (DbContext)
+        // Constructor
         public MeigemnDbContext(DbContextOptions<MeigemnDbContext> options)
             : base(options)
         {
@@ -26,26 +24,46 @@ namespace chat_ya_backend.Models.Context
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
-            // 1. Llamada para configurar las tablas de Identity (AspNetUsers, AspNetRoles, etc.)
+            // 1. Configuración base de Identity
             base.OnModelCreating(builder);
 
             // CONFIGURACIÓN DE LAS ENTIDADES DE CHAT
+            // ----------------------------------------
 
-            // 2. Configurar la clave compuesta para la tabla de unión UserRoom
+            // 2. Configurar la clave compuesta para la tabla de unión UserRoom (Muchos a Muchos)
             builder.Entity<UserRoom>()
                 .HasKey(ur => new { ur.UserId, ur.RoomId });
 
-            // 3. Configurar la relación de UserRoom con IdentityUser
+            // 3. Configurar la relación de UserRoom con ApplicationUser
             builder.Entity<UserRoom>()
                 .HasOne(ur => ur.User)
-                .WithMany() // <-- IdentityUser no tiene una colección 'UserRooms' por defecto
+                .WithMany(u => u.UserRooms) // 👈 Usa la propiedad de navegación en ApplicationUser
                 .HasForeignKey(ur => ur.UserId);
 
-            // Relación con ChatRoom 
+            // 4. Relación UserRoom con ChatRoom
             builder.Entity<UserRoom>()
                 .HasOne(ur => ur.Room)
                 .WithMany(r => r.UserRooms)
                 .HasForeignKey(ur => ur.RoomId);
+
+
+            // CONFIGURACIÓN DE LOS MENSAJES
+            // -----------------------------
+
+            // 5. Relación Message con ChatRoom (Uno a Muchos: Sala tiene mensajes)
+            builder.Entity<Message>()
+                .HasOne(m => m.Room)
+                .WithMany(r => r.Messages)
+                .HasForeignKey(m => m.RoomId)
+                .OnDelete(DeleteBehavior.Cascade); // Si la sala se elimina, los mensajes se eliminan (Cascade)
+
+            // 6. Relación Message con ApplicationUser (Uno a Muchos: Usuario tiene mensajes)
+            builder.Entity<Message>()
+                .HasOne(m => m.Sender)
+                .WithMany(u => u.Messages) // Usa la propiedad de navegación en ApplicationUser
+                .HasForeignKey(m => m.SenderId)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Restrict); // Evita eliminar un usuario si tiene mensajes (Restrict)
         }
     }
 }

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using chat_ya_backend.Models.Context;
 
@@ -10,9 +11,11 @@ using chat_ya_backend.Models.Context;
 namespace chat_ya_backend.Migrations
 {
     [DbContext(typeof(MeigemnDbContext))]
-    partial class MeigemnDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251203070805_AddChatRelationsWithApplicationUser")]
+    partial class AddChatRelationsWithApplicationUser
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.22");

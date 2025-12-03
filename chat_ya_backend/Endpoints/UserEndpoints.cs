@@ -4,13 +4,14 @@ using chat_ya_backend.Models.Dtos.ErrorDtos;
 using chat_ya_backend.Models.Dtos.RequestDtos;
 using chat_ya_backend.Models.Dtos.ResponseDtos;
 using chat_ya_backend.Models.Dtos.UpdateDto;
+using chat_ya_backend.Models.Entities;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using System.Security.Claims;
 using Swashbuckle.AspNetCore.Annotations;
 using System.Linq; // Necesario para .Select y String.Join
+using System.Security.Claims;
 
 namespace chat_ya_backend.Endpoints
 {
@@ -32,7 +33,7 @@ namespace chat_ya_backend.Endpoints
 
             #region Get all usuarios
             // --- 3. GET /api/users (Listar Todos los Usuarios) ---
-            group.MapGet("/", async (UserManager<IdentityUser> userManager, ILogger<object> userLogger) => // 💡 CORREGIDO aquí
+            group.MapGet("/", async (UserManager<ApplicationUser> userManager, ILogger<object> userLogger) => // 💡 CORREGIDO aquí
             {
                 userLogger.LogInformation("Solicitud para listar todos los usuarios.");
 
@@ -54,7 +55,7 @@ namespace chat_ya_backend.Endpoints
 
             #region get by id
             // --- 1. GET /api/users/{id} (Obtener Perfil por ID) ---
-            group.MapGet("/{id}", async (string id, UserManager<IdentityUser> userManager, ILogger<object> userLogger) => // 💡 CORREGIDO aquí
+            group.MapGet("/{id}", async (string id, UserManager<ApplicationUser> userManager, ILogger<object> userLogger) => // 💡 CORREGIDO aquí
             {
                 // 1. Buscar el usuario en Identity
                 var identityUser = await userManager.FindByIdAsync(id);
@@ -79,7 +80,7 @@ namespace chat_ya_backend.Endpoints
 
             #region Obtener perfil propio
             // --- 1. GET /api/users/me (Obtener Perfil Propio) ---
-            group.MapGet("/me", async (ClaimsPrincipal user, UserManager<IdentityUser> userManager, ILogger<object> userLogger) => // 💡 CORREGIDO aquí
+            group.MapGet("/me", async (ClaimsPrincipal user, UserManager<ApplicationUser> userManager, ILogger<object> userLogger) => // 💡 CORREGIDO aquí
             {
                 // 1. Obtener el ID del token JWT
                 var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -114,7 +115,7 @@ namespace chat_ya_backend.Endpoints
             group.MapPut("/me/username", async (
                 UpdateUsernameDto model,
                 ClaimsPrincipal user,
-                UserManager<IdentityUser> userManager,
+                UserManager<ApplicationUser> userManager,
                 ILogger<object> userLogger) => 
             {
                 var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -155,7 +156,7 @@ namespace chat_ya_backend.Endpoints
             group.MapPut("/me/email", async (
                 UpdateEmailDto model,
                 ClaimsPrincipal user,
-                UserManager<IdentityUser> userManager,
+                UserManager<ApplicationUser> userManager,
                 ILogger<object> userLogger) => 
             {
                 var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -196,7 +197,7 @@ namespace chat_ya_backend.Endpoints
             group.MapPost("/change-password", async (
                 ChangePasswordDto model,
                 ClaimsPrincipal user,
-                UserManager<IdentityUser> userManager,
+                UserManager<ApplicationUser> userManager,
                 ILogger<object> userLogger) => 
             {
                 var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -232,7 +233,7 @@ namespace chat_ya_backend.Endpoints
             // --- 5. DELETE /api/users/me (Eliminar Cuenta) ---
             group.MapDelete("/me", async (
                 ClaimsPrincipal user,
-                UserManager<IdentityUser> userManager,
+                UserManager<ApplicationUser> userManager,
                 ILogger<object> userLogger) => 
             {
                 var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
