@@ -72,7 +72,7 @@ namespace chat_ya_backend.Models.Dtos.ResponseDtos
         ///     Objeto de respuesta (Tu propiedad original)
         /// </summary>
         [JsonIgnore]
-        public object ReturnData { get; set; } = new object(); // <--- Corregido con inicializador de propiedad
+        public object ReturnData { get; set; } = new object(); 
                                                                // La inicialización en el constructor (línea 26) también es válida, 
                                                                // pero esta forma es más concisa. Dejo ambas para seguridad.
         #endregion
