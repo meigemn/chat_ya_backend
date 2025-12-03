@@ -7,8 +7,6 @@ namespace chat_ya_backend.Models.Dtos.RequestDtos
         // Propiedades de filtrado genérico (las mantienes)
         public object? Value { get; set; }
 
-       
-
         public string? PropertyName { get; set; }
 
         // Cadena de búsqueda general (la mantienes)

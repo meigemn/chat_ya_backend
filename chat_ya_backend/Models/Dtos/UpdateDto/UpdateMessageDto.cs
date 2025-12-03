@@ -6,6 +6,6 @@ namespace chat_ya_backend.Models.Dtos.UpdateDto
     {
         [Required]
         [MinLength(1)]
-        public string NewContent { get; set; } = string.Empty;
+        public string NewContent { get; set; } 
     }
 }

@@ -8,7 +8,10 @@
 
         #region Constructors
 
-        public CreateEditRemoveResponseDto()
+        /// <summary>
+        /// Asegura que la lista Errors nunca sea nula antes de que se use
+        /// </summary>
+        public CreateEditRemoveResponseDto() 
         {
             Errors = new List<string>();
         }
