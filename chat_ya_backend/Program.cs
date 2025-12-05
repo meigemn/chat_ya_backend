@@ -4,16 +4,21 @@ using chat_ya_backend.Models.Context;
 using chat_ya_backend.Models.Entities;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
-using System.Text.Json; 
+using System.Text.Json;
 #endregion
+
+// ?? Paso 1: Definir el nombre de la política de CORS (constante)
+const string MyAllowSpecificOrigins = "_myFrontendOriginPolicy";
 
 var builder = WebApplication.CreateBuilder(args);
 
 #region Configuración de Servicios
+
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 builder.Services.AddDbContext<MeigemnDbContext>(options =>
@@ -52,6 +57,23 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddAuthorization();
+
+// ?? Paso 2: Añadir y configurar el servicio CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(name: MyAllowSpecificOrigins,
+        policy =>
+        {
+            // ?? IMPORTANTE: Aquí se listan los orígenes permitidos para el frontend.
+            // Esto permite que tu app React/Electron se conecte a esta API.
+            policy.WithOrigins("http://localhost:5173", // Orígenes comunes de React/Vite
+                               "http://localhost:8080") 
+                  .AllowAnyHeader()                     // Necesario para cabeceras como 'Authorization'
+                  .AllowAnyMethod();                    // Necesario para métodos como 'POST'
+        });
+});
+// Configuración de SignalR
+builder.Services.AddSignalR();
 builder.Services.AddEndpointsApiExplorer();
 
 // Configuración de JSON a camelCase para el Frontend (React/TS)
@@ -99,6 +121,10 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// ?? Paso 3: Usar el middleware CORS (DEBE IR ANTES de UseAuthentication/UseAuthorization)
+app.UseCors(MyAllowSpecificOrigins);
+
 app.UseAuthentication();
 app.UseAuthorization();
 #endregion
@@ -108,6 +134,8 @@ app.MapAuthEndpoints();
 app.MapUserEndpoints();
 app.MapRoomEndpoints();
 app.MapMessageEndpoints();
+app.MapHub<chat_ya_backend.Hubs.ChatHub>("/chatHub") 
+   .RequireAuthorization();
 #endregion
 
 app.Run();
