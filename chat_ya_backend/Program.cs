@@ -54,6 +54,25 @@ builder.Services.AddAuthentication(options =>
         ValidIssuer = jwtIssuer,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
     };
+
+    // Configuración para SignalR: permite pasar el token por query string durante la negociación
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+
+            // Si la solicitud es para nuestro Hub SignalR
+            var path = context.HttpContext.Request.Path;
+            if (!string.IsNullOrEmpty(accessToken) &&
+                (path.StartsWithSegments("/chatHub")))
+            {
+                // Leer el token de la query string
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
+        }
+    };
 });
 
 builder.Services.AddAuthorization();
@@ -64,12 +83,13 @@ builder.Services.AddCors(options =>
     options.AddPolicy(name: MyAllowSpecificOrigins,
         policy =>
         {
-            // ?? IMPORTANTE: Aquí se listan los orígenes permitidos para el frontend.
-            // Esto permite que tu app React/Electron se conecte a esta API.
-            policy.WithOrigins("http://localhost:5173", // Orígenes comunes de React/Vite
-                               "http://localhost:8080") 
-                  .AllowAnyHeader()                     // Necesario para cabeceras como 'Authorization'
-                  .AllowAnyMethod();                    // Necesario para métodos como 'POST'
+            // ?? CORRECCIÓN/MEJORA CRÍTICA: SignalR necesita AllowCredentials() y orígenes explícitos para funcionar correctamente con Auth.
+            policy.WithOrigins("https://localhost:5173", // Orígenes comunes de React/Vite (cambiado a HTTPS)
+                               "http://localhost:5173", // Permitir ambos por si acaso, aunque HTTPS es preferible
+                               "http://localhost:8080")
+                      .AllowAnyHeader()
+                      .AllowAnyMethod()
+                      .AllowCredentials(); // <-- CRÍTICO: Necesario para SignalR/Auth
         });
 });
 // Configuración de SignalR
@@ -134,7 +154,7 @@ app.MapAuthEndpoints();
 app.MapUserEndpoints();
 app.MapRoomEndpoints();
 app.MapMessageEndpoints();
-app.MapHub<chat_ya_backend.Hubs.ChatHub>("/chatHub") 
+app.MapHub<chat_ya_backend.Hubs.ChatHub>("/chatHub")
    .RequireAuthorization();
 #endregion
 
