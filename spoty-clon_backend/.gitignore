@@ -1,0 +1,8 @@
+# Ignora el directorio de configuración de Visual Studio
+.vs/
+
+# También puedes añadir otros patrones comunes de Visual Studio si lo deseas
+# bin/
+# obj/
+# *.pdb
+# *.user
